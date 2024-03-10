@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 #else
 	argc = 0;
 
-	PlatformFunctions::changeWorkingDirectory("ux0:/data/sonic3air");
+	PlatformFunctions::changeWorkingDirectory(L"ux0:/data/sonic3air");
 	ArgumentsReader arguments;
 #endif
 
