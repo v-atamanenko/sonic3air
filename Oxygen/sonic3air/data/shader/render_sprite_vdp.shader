@@ -1,34 +1,33 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-// Needed for isamplerBuffer
-#version 140
+//#version 140		// Needed for isamplerBuffer
 
-precision highp float;
-precision highp int;
+//precision highp float;
+//precision highp int;
 
-uniform ivec2 Size;
+uniform int2 Size;
 uniform int FirstPattern;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-in vec2 position;
-out vec3 LocalOffset;
-
-uniform ivec3 Position;		// With z = priority flag (0 or 1)
-uniform ivec2 GameResolution;
+uniform int3 Position;		// With z = priority flag (0 or 1)
+uniform int2 GameResolution;
 uniform int WaterLevel;
 
-void main()
-{
+void main(
+	float2 position,
+	float3 out LocalOffset : TEXCOORD0,
+	float4 out gl_Position : POSITION
+) {
 	// Calculate local offset
 	LocalOffset.x = position.x * float(Size.x * 8);
 	LocalOffset.y = position.y * float(Size.y * 8);
 
 	// Flip if necessary
-	vec2 transformedVertex = position.xy;
+	float2 transformedVertex = position.xy;
 #ifdef GL_ES
 	if ((FirstPattern - int(FirstPattern / 0x1000) * 0x1000) >= 0x0800)
 		transformedVertex.x = (1.0 - transformedVertex.x);
@@ -52,42 +51,21 @@ void main()
 	gl_Position.w = 1.0;
 
 	// Calculate water offset
-	LocalOffset.z = transformedVertex.y - float(WaterLevel);
+	LocalOffset.z = (transformedVertex.y - float(WaterLevel)) / float(GameResolution.y);
 }
 
 
 
 ## ----- Fragment -----------------------------------------------------------------
 
-in vec3 LocalOffset;
-out vec4 FragColor;
-
-#ifdef USE_BUFFER_TEXTURES
-	uniform isamplerBuffer PatternCacheTexture;
-#else
-	uniform sampler2D PatternCacheTexture;
-#endif
+uniform sampler2D PatternCacheTexture;
 uniform sampler2D PaletteTexture;
-uniform vec4 TintColor;
-uniform vec4 AddedColor;
+uniform float4 TintColor;
+uniform float4 AddedColor;
 
-
-vec4 getPaletteColor(int paletteIndex, float paletteOffsetY)
-{
-#ifdef GL_ES
-	int paletteY = paletteIndex / 256;
-	int paletteX = paletteIndex - paletteY * 256;
-#else
-	int paletteX = paletteIndex & 0xff;
-	int paletteY = paletteIndex >> 8;
-#endif
-	vec2 samplePosition = vec2((float(paletteX) + 0.5) / 256.0, (float(paletteY) + 0.5) / 4.0 + paletteOffsetY);
-	return texture(PaletteTexture, samplePosition);
-}
-
-
-void main()
-{
+float4 main(
+	float3 LocalOffset : TEXCOORD0
+) {
 	int ix = int(LocalOffset.x);
 	int iy = int(LocalOffset.y);
 	int patternX = ix / 8;
@@ -108,20 +86,15 @@ void main()
 #else
 	int patternCacheLookupIndexY = patternIndex & 0x07ff;
 #endif
-#ifdef USE_BUFFER_TEXTURES
-	int patternCacheLookupIndex = patternCacheLookupIndexX + patternCacheLookupIndexY * 64;
-	int paletteIndex = texelFetch(PatternCacheTexture, patternCacheLookupIndex).x;
-#else
-	int paletteIndex = int(texture(PatternCacheTexture, vec2((float(patternCacheLookupIndexX) + 0.5) / 64.0, (float(patternCacheLookupIndexY) + 0.5) / 2048.0)).x * 256.0);
-#endif
+	int paletteIndex = int(tex2D(PatternCacheTexture, float2((float(patternCacheLookupIndexX) + 0.5) / 64.0, (float(patternCacheLookupIndexY) + 0.5) / 2048.0)).x * 256.0);
 	paletteIndex += atex;
 
-	vec4 color = getPaletteColor(paletteIndex, clamp(LocalOffset.z, 0.0, 0.5));
-	color = vec4(AddedColor.rgb, 0.0) + color * TintColor;
+	float4 color = tex2D(PaletteTexture, float2((float(paletteIndex) + 0.5) / 512.0, LocalOffset.z + 0.5));
+	color = float4(AddedColor.rgb, 0.0) + color * TintColor;
 	if (color.a < 0.01)
 		discard;
 
-	FragColor = color;
+	return color;
 }
 
 
@@ -130,6 +103,7 @@ void main()
 
 technique Standard
 {
+	blendfunc = alpha;
 	vs = Shared + Vertex;
 	fs = Shared + Fragment;
 	vertexattrib[0] = position;

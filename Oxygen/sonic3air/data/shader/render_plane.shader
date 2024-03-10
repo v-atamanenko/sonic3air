@@ -1,30 +1,31 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-// Needed for isamplerBuffer
-#version 140
+//#version 140		// Needed for isamplerBuffer
 
-precision highp float;
-precision highp int;
+//precision highp float;
+//precision highp int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-in vec2 position;
-out vec2 LocalOffset;
+uniform int4 ActiveRect;
+uniform int2 GameResolution;
+uniform int WaterLevel;
 
-uniform ivec4 ActiveRect;
-uniform ivec2 GameResolution;
-
-void main()
-{
-	ivec2 screenPosition;
+void main(
+	float2 position,
+	float3 out LocalOffset : TEXCOORD0,
+	float4 out gl_Position : POSITION
+) {
+	int2 screenPosition;
 	screenPosition.x = ActiveRect.x + int(position.x * float(ActiveRect.z) + 0.5);
 	screenPosition.y = ActiveRect.y + int(position.y * float(ActiveRect.w) + 0.5);
 
 	LocalOffset.x = float(screenPosition.x);
 	LocalOffset.y = float(screenPosition.y);
+	LocalOffset.z = float(screenPosition.y - WaterLevel) / float(GameResolution.y);
 
 	gl_Position.x = float(screenPosition.x) / float(GameResolution.x) * 2.0 - 1.0;
 	gl_Position.y = float(screenPosition.y) / float(GameResolution.y) * 2.0 - 1.0;
@@ -36,72 +37,37 @@ void main()
 
 ## ----- Fragment -----------------------------------------------------------------
 
-in vec2 LocalOffset;
-out vec4 FragColor;
-
-#ifdef USE_BUFFER_TEXTURES
-	uniform isamplerBuffer IndexTexture;
-	uniform isamplerBuffer PatternCacheTexture;
-#else
-	uniform sampler2D IndexTexture;
-	uniform sampler2D PatternCacheTexture;
-#endif
+uniform sampler2D IndexTexture;
+uniform sampler2D PatternCacheTexture;
 
 uniform sampler2D PaletteTexture;
-uniform float PaletteOffset;
-uniform ivec4 PlayfieldSize;
+uniform int4 PlayfieldSize;
 uniform int PriorityFlag;		// 0 or 1
 
 #ifdef HORIZONTAL_SCROLLING
-	#ifdef USE_BUFFER_TEXTURES
-		uniform isamplerBuffer HScrollOffsetsTexture;
-	#else
-		uniform sampler2D HScrollOffsetsTexture;
-	#endif
+uniform sampler2D HScrollOffsetsTexture;
 #else
-	uniform int ScrollOffsetX;
+uniform int ScrollOffsetX;
 #endif
 
 #ifdef VERTICAL_SCROLLING
-	#ifdef USE_BUFFER_TEXTURES
-		uniform isamplerBuffer VScrollOffsetsTexture;
-	#else
-		uniform sampler2D VScrollOffsetsTexture;
-	#endif
-	uniform int VScrollOffsetBias;
+uniform sampler2D VScrollOffsetsTexture;
+uniform int VScrollOffsetBias;
 #else
-	uniform int ScrollOffsetY;
+uniform int ScrollOffsetY;
 #endif
 
-
-vec4 getPaletteColor(int paletteIndex, float paletteOffsetY)
-{
-#ifdef GL_ES
-	int paletteY = paletteIndex / 256;
-	int paletteX = paletteIndex - paletteY * 256;
-#else
-	int paletteX = paletteIndex & 0xff;
-	int paletteY = paletteIndex >> 8;
-#endif
-	vec2 samplePosition = vec2((float(paletteX) + 0.5) / 256.0, (float(paletteY) + 0.5) / 4.0 + paletteOffsetY);
-	return texture(PaletteTexture, samplePosition);
-}
-
-
-void main()
-{
+float4 main(
+	float3 LocalOffset : TEXCOORD0
+) {
 	int ix = int(LocalOffset.x);
 	int iy = int(LocalOffset.y);
 
 #ifdef HORIZONTAL_SCROLLING
-	#ifdef USE_BUFFER_TEXTURES
-		int scrollOffsetLookupX = texelFetch(HScrollOffsetsTexture, iy).x;
-	#else
-		vec2 texelScrollX = texture(HScrollOffsetsTexture, vec2((float(iy) + 0.5) / 256.0, 0.5)).ra;
-		int scrollOffsetLookupXH = int(mod(texelScrollX.y * 256.0, 16.0));
-		int scrollOffsetLookupXL = int(texelScrollX.x * 256.0);
-		int scrollOffsetLookupX = scrollOffsetLookupXL + scrollOffsetLookupXH * 256;
-	#endif
+	float2 texelScrollX = tex2D(HScrollOffsetsTexture, float2((float(iy) + 0.5) / 256.0, 0.5)).ra;
+	int scrollOffsetLookupXH = int(fmod(texelScrollX.y * 256.0, 16.0));
+	int scrollOffsetLookupXL = int(texelScrollX.x * 256.0);
+	int scrollOffsetLookupX = scrollOffsetLookupXL + scrollOffsetLookupXH * 256;
 #else
 	int scrollOffsetLookupX = ScrollOffsetX;
 #endif
@@ -113,14 +79,10 @@ void main()
 	#else
 		vx = (vx & 0x1f0) >> 4;
 	#endif
-	#ifdef USE_BUFFER_TEXTURES
-		int scrollOffsetLookupY = texelFetch(VScrollOffsetsTexture, vx).x;
-	#else
-		vec2 texelScrollY = texture(VScrollOffsetsTexture, vec2((float(vx) + 0.5) / 32.0, 0.5)).ra;
-		int scrollOffsetLookupYH = int(mod(texelScrollY.y * 256.0, 16.0));
-		int scrollOffsetLookupYL = int(texelScrollY.x * 256.0);
-		int scrollOffsetLookupY = scrollOffsetLookupYL + scrollOffsetLookupYH * 256;
-	#endif
+	float2 texelScrollY = tex2D(VScrollOffsetsTexture, float2((float(vx) + 0.5) / 32.0, 0.5)).ra;
+	int scrollOffsetLookupYH = int(fmod(texelScrollY.y * 256.0, 16.0));
+	int scrollOffsetLookupYL = int(texelScrollY.x * 256.0);
+	int scrollOffsetLookupY = scrollOffsetLookupYL + scrollOffsetLookupYH * 256;
 #else
 	int scrollOffsetLookupY = ScrollOffsetY;
 #endif
@@ -151,13 +113,7 @@ void main()
 	int localX = ix - patternX * 8;
 	int localY = iy - patternY * 8;
 
-#ifdef USE_BUFFER_TEXTURES
-	int patternIndex = texelFetch(IndexTexture, patternX + patternY * PlayfieldSize.z).x;
-	if (int(patternIndex / 0x8000) != PriorityFlag)
-		discard;
-	// No support for GL_ES here
-#else
-	vec2 texel = texture(IndexTexture, vec2((float(patternX + patternY * PlayfieldSize.z) + 0.5) / float(PlayfieldSize.z * PlayfieldSize.w), 0.5)).ra;
+	float2 texel = tex2D(IndexTexture, float2((float(patternX + patternY * PlayfieldSize.z) + 0.5) / float(PlayfieldSize.z * PlayfieldSize.w), 0.5)).ra;
 	int patternIndexH = int(texel.y * 255.5);
 	int patternIndexL = int(texel.x * 255.5);
 	if ((patternIndexH >= 0x80) != (PriorityFlag >= 1))
@@ -165,7 +121,6 @@ void main()
 	#ifndef GL_ES
 		int patternIndex = patternIndexL + patternIndexH * 256;
 	#endif
-#endif
 
 #ifdef GL_ES
 	int atex = int((patternIndexH - int(patternIndexH / 0x80) * 0x80) / 0x20) * 0x10;
@@ -183,20 +138,16 @@ void main()
 #else
 	int patternCacheLookupIndexY = patternIndex & 0x07ff;
 #endif
-#ifdef USE_BUFFER_TEXTURES
-	int paletteIndex = texelFetch(PatternCacheTexture, patternCacheLookupIndexX + patternCacheLookupIndexY * 64).x;
-#else
-	int paletteIndex = int(texture(PatternCacheTexture, vec2((float(patternCacheLookupIndexX) + 0.5) / 64.0, (float(patternCacheLookupIndexY) + 0.5) / 2048.0)).x * 256.0);
-#endif
+	int paletteIndex = int(tex2D(PatternCacheTexture, float2((float(patternCacheLookupIndexX) + 0.5) / 64.0, (float(patternCacheLookupIndexY) + 0.5) / 2048.0)).x * 256.0);
 	paletteIndex += atex;
 
-	vec4 color = getPaletteColor(paletteIndex, PaletteOffset);
+	float4 color = tex2D(PaletteTexture, float2((float(paletteIndex) + 0.5) / 512.0, LocalOffset.z + 0.5));
 #ifdef ALPHA_TEST
 	if (color.a < 0.01)
 		discard;
 #endif
 
-	FragColor = color;
+	return color;
 }
 
 

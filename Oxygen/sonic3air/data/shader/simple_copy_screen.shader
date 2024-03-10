@@ -1,20 +1,20 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-#version 130
+//#version 130
 
-precision mediump float;
-precision mediump int;
+//precision mediump float;
+//precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-in vec2 position;
-out vec2 uv0;
-
-void main()
-{
+void main(
+	float2 position,
+	float2 out uv0 : TEXCOORD0,
+	float4 out gl_Position : POSITION
+) {
 	uv0.xy = position.xy;
 	gl_Position.x = position.x * 2.0 - 1.0;
 	gl_Position.y = position.y * 2.0 - 1.0;
@@ -26,14 +26,12 @@ void main()
 
 ## ----- Fragment -----------------------------------------------------------------
 
-in vec2 uv0;
-out vec4 FragColor;
+uniform sampler2D tex;
 
-uniform sampler2D Texture;
-
-void main()
-{
-	FragColor = texture(Texture, uv0);
+float4 main(
+	float2 uv0 : TEXCOORD0
+) {
+	return tex2D(tex, uv0);
 }
 
 

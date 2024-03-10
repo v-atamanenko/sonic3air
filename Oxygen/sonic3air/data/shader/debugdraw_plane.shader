@@ -1,21 +1,20 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-// Needed for isamplerBuffer
-#version 140
+//#version 140		// Needed for isamplerBuffer
 
-precision mediump float;
-precision mediump int;
+//precision mediump float;
+//precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-in vec2 position;
-out vec2 uv0;
-
-void main()
-{
+void main(
+	float2 position,
+	float2 out uv0 : TEXCOORD0,
+	float4 out gl_Position : POSITION
+) {
 	uv0.xy = position.xy;
 	gl_Position.x = position.x * 2.0 - 1.0;
 	gl_Position.y = 1.0 - position.y * 2.0;
@@ -27,32 +26,15 @@ void main()
 
 ## ----- Fragment -----------------------------------------------------------------
 
-in vec2 uv0;
-out vec4 FragColor;
-
-uniform isamplerBuffer IndexTexture;
-uniform isamplerBuffer PatternCacheTexture;
+uniform sampler2D IndexTexture;
+uniform sampler2D PatternCacheTexture;
 uniform sampler2D PaletteTexture;
-uniform ivec4 PlayfieldSize;
+uniform int4 PlayfieldSize;
 uniform int HighlightPrio;		// 0 or 1
 
-
-vec4 getPaletteColor(int paletteIndex, float paletteOffsetY)
-{
-#ifdef GL_ES
-	int paletteY = paletteIndex / 256;
-	int paletteX = paletteIndex - paletteY * 256;
-#else
-	int paletteX = paletteIndex & 0xff;
-	int paletteY = paletteIndex >> 8;
-#endif
-	vec2 samplePosition = vec2((float(paletteX) + 0.5) / 256.0, (float(paletteY) + 0.5) / 4.0 + paletteOffsetY);
-	return texture(PaletteTexture, samplePosition);
-}
-
-
-void main()
-{
+float4 main(
+	float2 uv0 : TEXCOORD0
+) {
 	int ix = int(uv0.x * float(PlayfieldSize.x));
 	int iy = int(uv0.y * float(PlayfieldSize.y));
 
@@ -61,16 +43,11 @@ void main()
 	int localX = ix - patternX * 8;
 	int localY = iy - patternY * 8;
 
-#ifdef USE_BUFFER_TEXTURES
-	int patternIndex = texelFetch(IndexTexture, patternX + patternY * PlayfieldSize.z).x;
-	// No support for GL_ES here
-#else
-	vec2 texel = texture(IndexTexture, vec2((float(patternX + patternY * PlayfieldSize.z) + 0.5) / float(PlayfieldSize.z * PlayfieldSize.w), 0.5)).ra;
+	float2 texel = tex2D(IndexTexture, float2((float(patternX + patternY * PlayfieldSize.z) + 0.5) / float(PlayfieldSize.z * PlayfieldSize.w), 0.5)).ra;
 	int patternIndexH = int(texel.y * 255.5);
 	int patternIndexL = int(texel.x * 255.5);
-	#ifndef GL_ES
-		int patternIndex = patternIndexL + patternIndexH * 256;
-	#endif
+#ifndef GL_ES
+	int patternIndex = patternIndexL + patternIndexH * 256;
 #endif
 
 #ifdef GL_ES
@@ -89,14 +66,10 @@ void main()
 #else
 	int patternCacheLookupIndexY = patternIndex & 0x07ff;
 #endif
-#ifdef USE_BUFFER_TEXTURES
-	int paletteIndex = texelFetch(PatternCacheTexture, patternCacheLookupIndexX + patternCacheLookupIndexY * 64).x;
-#else
-	int paletteIndex = int(texture(PatternCacheTexture, vec2((float(patternCacheLookupIndexX) + 0.5) / 64.0, (float(patternCacheLookupIndexY) + 0.5) / 2048.0)).x * 256.0);
-#endif
+	int paletteIndex = int(tex2D(PatternCacheTexture, float2((float(patternCacheLookupIndexX) + 0.5) / 64.0, (float(patternCacheLookupIndexY) + 0.5) / 2048.0)).x * 256.0);
 	paletteIndex += atex;
 
-	vec4 color = getPaletteColor(paletteIndex, 0.0);
+	float4 color = tex2D(PaletteTexture, vec2(float(paletteIndex + 0.5) / 512, 0.0));
 	if ((patternIndex >> 15) < HighlightPrio)
 		color.rgb *= 0.3;
 
@@ -107,7 +80,7 @@ void main()
 */
 	color.a = 1.0;
 
-	FragColor = color;
+	return color;
 }
 
 

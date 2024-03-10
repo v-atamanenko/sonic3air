@@ -1,7 +1,7 @@
 
 // Hq2x shader
 //   - Adapted for use in Oxygen Engine
-//  Copyright (C) 2018-2024 Eukaryot
+//  Copyright (C) 2018-2021 Eukaryot
 //
 // This shader is derived from original "hq2x.glsl" from https://github.com/Armada651/hqx-shader/blob/master/glsl
 // Used under GNU General Public License v2, see additional license info below.
@@ -48,10 +48,10 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-#version 130
+//#version 130
 
-precision mediump float;
-precision mediump int;
+//precision mediump float;
+//precision mediump int;
 
 #ifdef HQ2X
 	#define SCALE 2.0
@@ -67,19 +67,19 @@ precision mediump int;
 
 ## ----- Vertex -------------------------------------------------------------------
 
-in vec2 position;
-out vec4 vTexCoord[4];
+uniform float2 GameResolution;
 
-uniform vec2 GameResolution;
-
-void main()
-{
+void main(
+	float2 position,
+	float4 out vTexCoord[4] : TEXCOORD0,
+	float4 out gl_Position : POSITION
+) {
 	gl_Position.x = position.x * 2.0 - 1.0;
 	gl_Position.y = 1.0 - position.y * 2.0;
 	gl_Position.z = 0.0;
 	gl_Position.w = 1.0;
 
-	vec2 ps = 1.0 / GameResolution;
+	float2 ps = 1.0 / GameResolution;
 	float dx = ps.x;
 	float dy = ps.y;
 
@@ -96,76 +96,76 @@ void main()
 
 	vTexCoord[0].zw = ps;
 	vTexCoord[0].xy = position.xy;
-	vTexCoord[1] = position.xxxy + vec4(-dx, 0, dx, -dy); //  w1 | w2 | w3
-	vTexCoord[2] = position.xxxy + vec4(-dx, 0, dx, 0);   //  w4 | w5 | w6
-	vTexCoord[3] = position.xxxy + vec4(-dx, 0, dx, dy);  //  w7 | w8 | w9
+	vTexCoord[1] = position.xxxy + float4(-dx, 0, dx, -dy); //  w1 | w2 | w3
+	vTexCoord[2] = position.xxxy + float4(-dx, 0, dx, 0);   //  w4 | w5 | w6
+	vTexCoord[3] = position.xxxy + float4(-dx, 0, dx, dy);  //  w7 | w8 | w9
 }
 
 
 
 ## ----- Fragment -----------------------------------------------------------------
 
-uniform sampler2D Texture;
+uniform sampler2D tex;
 uniform sampler2D LUT;
-uniform vec2 GameResolution;
+uniform float2 GameResolution;
 
-in vec4 vTexCoord[4];
-out vec4 FragColor;
+static float3x3 yuv_matrix = float3x3(0.299, -0.169, 0.5, 0.587, -0.331, -0.419, 0.114, 0.5, -0.081);
+static float3 yuv_threshold = float3(48.0 / 255.0, 7.0 / 255.0, 6.0 / 255.0);
+static float3 yuv_offset = float3(0, 0.5, 0.5);
 
-const mat3 yuv_matrix = mat3(0.299, -0.169, 0.5, 0.587, -0.331, -0.419, 0.114, 0.5, -0.081);
-const vec3 yuv_threshold = vec3(48.0 / 255.0, 7.0 / 255.0, 6.0 / 255.0);
-const vec3 yuv_offset = vec3(0, 0.5, 0.5);
-
-bool diff(vec3 yuv1, vec3 yuv2)
+bool diff(float3 yuv1, float3 yuv2)
 {
-	bvec3 res = greaterThan(abs((yuv1 + yuv_offset) - (yuv2 + yuv_offset)), yuv_threshold);
+	float3 v1 = abs((yuv1 + yuv_offset) - (yuv2 + yuv_offset));
+	
+	bool3 res = bool3(v1.x > yuv_threshold.x, v1.y > yuv_threshold.y, v1.z > yuv_threshold.z);
 	return res.x || res.y || res.z;
 }
 
-void main()
-{
-	vec2 fp = fract(vTexCoord[0].xy * GameResolution);
-	vec2 quad = sign(-0.5 + fp);
+float4 main(
+	float4 vTexCoord[4] : TEXCOORD0
+) {
+	float2 fp = frac(vTexCoord[0].xy * GameResolution);
+	float2 quad = sign(-0.5 + fp);
 
 	float dx = vTexCoord[0].z;
 	float dy = vTexCoord[0].w;
-	vec3 p1 = texture(Texture, vTexCoord[0].xy).rgb;
-	vec3 p2 = texture(Texture, vTexCoord[0].xy + vec2(dx, dy) * quad).rgb;
-	vec3 p3 = texture(Texture, vTexCoord[0].xy + vec2(dx, 0) * quad).rgb;
-	vec3 p4 = texture(Texture, vTexCoord[0].xy + vec2(0, dy) * quad).rgb;
+	float3 p1 = tex2D(tex, vTexCoord[0].xy).rgb;
+	float3 p2 = tex2D(tex, vTexCoord[0].xy + float2(dx, dy) * quad).rgb;
+	float3 p3 = tex2D(tex, vTexCoord[0].xy + float2(dx, 0) * quad).rgb;
+	float3 p4 = tex2D(tex, vTexCoord[0].xy + float2(0, dy) * quad).rgb;
 
-	vec3 w1 = yuv_matrix * texture(Texture, vTexCoord[1].xw).rgb;
-	vec3 w2 = yuv_matrix * texture(Texture, vTexCoord[1].yw).rgb;
-	vec3 w3 = yuv_matrix * texture(Texture, vTexCoord[1].zw).rgb;
+	float3 w1 = mul(tex2D(tex, vTexCoord[1].xw).rgb, yuv_matrix);
+	float3 w2 = mul(tex2D(tex, vTexCoord[1].yw).rgb, yuv_matrix);
+	float3 w3 = mul(tex2D(tex, vTexCoord[1].zw).rgb, yuv_matrix);
 
-	vec3 w4 = yuv_matrix * texture(Texture, vTexCoord[2].xw).rgb;
-	vec3 w5 = yuv_matrix * p1;
-	vec3 w6 = yuv_matrix * texture(Texture, vTexCoord[2].zw).rgb;
+	float3 w4 = mul(tex2D(tex, vTexCoord[2].xw).rgb, yuv_matrix);
+	float3 w5 = mul(p1, yuv_matrix);
+	float3 w6 = mul(tex2D(tex, vTexCoord[2].zw).rgb, yuv_matrix);
 
-	vec3 w7 = yuv_matrix * texture(Texture, vTexCoord[3].xw).rgb;
-	vec3 w8 = yuv_matrix * texture(Texture, vTexCoord[3].yw).rgb;
-	vec3 w9 = yuv_matrix * texture(Texture, vTexCoord[3].zw).rgb;
+	float3 w7 = mul(tex2D(tex, vTexCoord[3].xw).rgb, yuv_matrix);
+	float3 w8 = mul(tex2D(tex, vTexCoord[3].yw).rgb, yuv_matrix);
+	float3 w9 = mul(tex2D(tex, vTexCoord[3].zw).rgb, yuv_matrix);
 
-	bvec3 pattern[3];
-	pattern[0] = bvec3(diff(w5, w1), diff(w5, w2), diff(w5, w3));
-	pattern[1] = bvec3(diff(w5, w4), false, diff(w5, w6));
-	pattern[2] = bvec3(diff(w5, w7), diff(w5, w8), diff(w5, w9));
-	bvec4 cross = bvec4(diff(w4, w2), diff(w2, w6), diff(w8, w4), diff(w6, w8));
+	bool3 pattern[3];
+	pattern[0] = bool3(diff(w5, w1), diff(w5, w2), diff(w5, w3));
+	pattern[1] = bool3(diff(w5, w4), false, diff(w5, w6));
+	pattern[2] = bool3(diff(w5, w7), diff(w5, w8), diff(w5, w9));
+	bool4 _cross = bool4(diff(w4, w2), diff(w2, w6), diff(w8, w4), diff(w6, w8));
 
-	vec2 index;
-	index.x = dot(vec3(pattern[0]), vec3(1, 2, 4)) +
-			  dot(vec3(pattern[1]), vec3(8, 0, 16)) +
-			  dot(vec3(pattern[2]), vec3(32, 64, 128));
-	index.y = dot(vec4(cross), vec4(1, 2, 4, 8)) * (SCALE * SCALE) +
-			  dot(floor(fp * SCALE), vec2(1, SCALE));
+	float2 index;
+	index.x = dot(float3(pattern[0]), float3(1, 2, 4)) +
+			  dot(float3(pattern[1]), float3(8, 0, 16)) +
+			  dot(float3(pattern[2]), float3(32, 64, 128));
+	index.y = dot(float4(_cross), float4(1, 2, 4, 8)) * (SCALE * SCALE) +
+			  dot(floor(fp * SCALE), float2(1, SCALE));
 
-	vec2 step = 1.0 / vec2(256.0, 16.0 * (SCALE * SCALE));
-	vec2 offset = step / 2.0;
-	vec4 weights = texture(LUT, index * step + offset);
-	float sum = dot(weights, vec4(1));
-	vec3 res = (p1 * weights.x + p2 * weights.y + p3 * weights.z + p4 * weights.w) / sum;
+	float2 _step = 1.0 / float2(256.0, 16.0 * (SCALE * SCALE));
+	float2 offset = _step / 2.0;
+	float4 weights = tex2D(LUT, index * _step + offset);
+	float sum = dot(weights, float4(1));
+	float3 res = (p1 * weights.x + p2 * weights.y + p3 * weights.z + p4 * weights.w) / sum;
 
-	FragColor = vec4(res, 1.0);
+	return float4(res, 1.0);
 }
 
 

@@ -1,7 +1,7 @@
 
 // Hyllian's xBRZ freescale multipass shader
 //   - Adapted for use in Oxygen Engine
-//  Copyright (C) 2018-2024 Eukaryot
+//  Copyright (C) 2018-2021 Eukaryot
 //
 // This shader is derived from original "xbrz-freescale-pass0.glsl" from https://github.com/libretro/glsl-shaders/tree/master/xbrz/shaders/xbrz-freescale-multipass
 // Used under GNU General Public License v2, see additional license info below.
@@ -66,20 +66,20 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-#version 130
+//#version 130
 
-precision mediump float;
-precision mediump int;
+//precision mediump float;
+//precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-in vec2 position;
-out vec2 TEX0;
-
-void main()
-{
+void main(
+	float2 position,
+	float2 out TEX0 : TEXCOORD0,
+	float4 out gl_Position : POSITION
+) {
 	gl_Position.x = position.x * 2.0 - 1.0;
 	gl_Position.y = position.y * 2.0 - 1.0;
 	gl_Position.z = 0.0;
@@ -91,13 +91,10 @@ void main()
 
 ## ----- Fragment -----------------------------------------------------------------
 
-in vec2 TEX0;
-out vec4 FragColor;
+uniform float2 GameResolution;
+uniform sampler2D tex;
 
-uniform vec2 GameResolution;
-uniform sampler2D Texture;
-
-#define SourceSize vec4(GameResolution, 1.0 / GameResolution)
+#define SourceSize float4(GameResolution, 1.0 / GameResolution)
 
 #define BLEND_NONE 0
 #define BLEND_NORMAL 1
@@ -107,19 +104,19 @@ uniform sampler2D Texture;
 #define STEEP_DIRECTION_THRESHOLD 2.2
 #define DOMINANT_DIRECTION_THRESHOLD 3.6
 
-float DistYCbCr(vec3 pixA, vec3 pixB)
+float DistYCbCr(float3 pixA, float3 pixB)
 {
-	const vec3 w = vec3(0.2627, 0.6780, 0.0593);
+	const float3 w = float3(0.2627, 0.6780, 0.0593);
 	const float scaleB = 0.5 / (1.0 - w.b);
 	const float scaleR = 0.5 / (1.0 - w.r);
-	vec3 diff = pixA - pixB;
+	float3 diff = pixA - pixB;
 	float Y = dot(diff.rgb, w);
 	float Cb = scaleB * (diff.b - Y);
 	float Cr = scaleR * (diff.r - Y);
 	return sqrt(((LUMINANCE_WEIGHT * Y) * (LUMINANCE_WEIGHT * Y)) + (Cb * Cb) + (Cr * Cr));
 }
 
-bool IsPixEqual(const vec3 pixA, const vec3 pixB)
+bool IsPixEqual(const float3 pixA, const float3 pixB)
 {
 	return (DistYCbCr(pixA, pixB) < EQUAL_COLOR_TOLERANCE);
 }
@@ -127,10 +124,11 @@ bool IsPixEqual(const vec3 pixA, const vec3 pixB)
 #define eq(a,b)  (a == b)
 #define neq(a,b) (a != b)
 
-#define P(x,y) texture(Texture, coord + SourceSize.zw * vec2(x, y)).rgb
+#define P(x,y) tex2D(tex, coord + SourceSize.zw * float2(x, y)).rgb
 
-void main()
-{
+float4 main(
+	float2 TEX0 : TEXCOORD0
+) {
 	//---------------------------------------
 	// Input Pixel Mapping:  -|x|x|x|-
 	//                       x|A|B|C|x
@@ -138,22 +136,22 @@ void main()
 	//                       x|G|H|I|x
 	//                       -|x|x|x|-
 
-	vec2 pos = fract(TEX0.xy * SourceSize.xy) - vec2(0.5, 0.5);
-	vec2 coord = TEX0.xy - pos * SourceSize.zw;
+	float2 pos = frac(TEX0.xy * SourceSize.xy) - float2(0.5, 0.5);
+	float2 coord = TEX0.xy - pos * SourceSize.zw;
 
-	vec3 A = P(-1.,-1.);
-	vec3 B = P( 0.,-1.);
-	vec3 C = P( 1.,-1.);
-	vec3 D = P(-1., 0.);
-	vec3 E = P( 0., 0.);
-	vec3 F = P( 1., 0.);
-	vec3 G = P(-1., 1.);
-	vec3 H = P( 0., 1.);
-	vec3 I = P( 1., 1.);
+	float3 A = P(-1.,-1.);
+	float3 B = P( 0.,-1.);
+	float3 C = P( 1.,-1.);
+	float3 D = P(-1., 0.);
+	float3 E = P( 0., 0.);
+	float3 F = P( 1., 0.);
+	float3 G = P(-1., 1.);
+	float3 H = P( 0., 1.);
+	float3 I = P( 1., 1.);
 
 	// blendResult Mapping: x|y|
 	//                      w|z|
-	ivec4 blendResult = ivec4(BLEND_NONE,BLEND_NONE,BLEND_NONE,BLEND_NONE);
+	int4 blendResult = int4(BLEND_NONE,BLEND_NONE,BLEND_NONE,BLEND_NONE);
 
 	// Preprocess corners
 	// Pixel Tap Mapping: -|-|-|-|-
@@ -209,7 +207,7 @@ void main()
 		blendResult.x = ((dist_D_B < dist_A_E) && neq(E,D) && neq(E,B)) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 
-	FragColor = vec4(blendResult);
+	float4 FragColor = float4(blendResult);
 
 	// Pixel Tap Mapping: -|-|-|-|-
 	//                    -|-|B|C|-
@@ -295,7 +293,7 @@ void main()
 			FragColor.x += 64.0;
 	}
 
-	FragColor /= 255.0;
+	return FragColor / 255.0f;
 }
 
 

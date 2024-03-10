@@ -1,27 +1,27 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-#version 130
+//#version 130
 
-precision mediump float;
-precision mediump int;
+//precision mediump float;
+//precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-in vec2 position;
-in vec4 color;
-out vec4 interpolatedColor;
+uniform float4 Transform;
 
-uniform vec4 Transform;
-
-void main()
-{
-	vec2 pos = vec2(Transform.x + position.x * Transform.z, Transform.y + position.y * Transform.w);
+void main(
+	float2 position,
+	float4 color,
+	float4 out interpolatedColor : COLOR,
+	float4 out gl_Position : POSITION
+) {
+	float2 pos = float2(Transform.x + position.x * Transform.z, Transform.y + position.y * Transform.w);
 
 	// Intentionally using a z-value of 0.5
-	gl_Position = vec4(pos, 0.5, 1.0);
+	gl_Position = float4(pos, 0.5, 1.0);
 	interpolatedColor = color;
 }
 
@@ -29,12 +29,10 @@ void main()
 
 ## ----- Fragment -----------------------------------------------------------------
 
-in vec4 interpolatedColor;
-out vec4 FragColor;
-
-void main()
-{
-	FragColor = interpolatedColor;
+float4 main(
+	float4 interpolatedColor : COLOR
+) {
+	return interpolatedColor;
 }
 
 
