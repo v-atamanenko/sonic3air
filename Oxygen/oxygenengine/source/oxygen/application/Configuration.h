@@ -152,7 +152,11 @@ public:
 
 	// Video
 	WindowMode mWindowMode = WindowMode::WINDOWED;
+#ifdef __vita__
+	Vec2i mWindowSize = Vec2i(960, 544);
+#else
 	Vec2i mWindowSize = Vec2i(1200, 672);
+#endif
 	Vec2i mGameScreen = Vec2i(400, 224);
 	int   mDisplayIndex = 0;
 	RenderMethod mRenderMethod = RenderMethod::UNDEFINED;

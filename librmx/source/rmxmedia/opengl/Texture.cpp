@@ -222,13 +222,17 @@ void Texture::updateRect(const Bitmap& bitmap, int px, int py)
 void Texture::copyFramebuffer(const Recti& rect)
 {
 	bind();
+#if !defined(PLATFORM_VITA)
 	glCopyTexImage2D(mType, 0, mFormat, rect.left, rect.top, rect.left+rect.width, rect.top+rect.height, 0);
+#endif
 }
 
 void Texture::copyFramebufferCubemap(const Recti& rect, int side)
 {
 	bind();
+#if !defined(PLATFORM_VITA)
 	glCopyTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, 0, mFormat, rect.left, rect.top, rect.left+rect.width, rect.top+rect.height, 0);
+#endif
 }
 
 void Texture::buildMipmaps()

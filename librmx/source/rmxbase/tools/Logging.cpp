@@ -13,6 +13,8 @@
 	#include <CleanWindowsInclude.h>
 #elif defined(PLATFORM_ANDROID)
 	#include <android/log.h>
+#elif defined(PLATFORM_VITA)
+	#include <psp2/kernel/clib.h>
 #endif
 
 #include <chrono>
@@ -81,6 +83,10 @@ namespace rmx
 	#elif defined(PLATFORM_ANDROID)
 		{
 			__android_log_print(ANDROID_LOG_INFO, "rmx", "%s", string.c_str());
+		}
+	#elif defined(PLATFORM_VITA)
+		{
+			sceClibPrintf("%s", string.c_str());
 		}
 	#endif
 	}

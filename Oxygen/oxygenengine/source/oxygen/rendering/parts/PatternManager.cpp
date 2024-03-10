@@ -35,7 +35,17 @@ void PatternManager::refresh()
 					//  -> This code is slightly optimized compared to a memcmp
 					const uint64* cache = (uint64*)cacheItem.mOriginalDataBackup;
 					const uint64* source = (uint64*)src;
-					const bool changed = ((cache[0] != source[0]) | (cache[1] != source[1]) | (cache[2] != source[2]) | (cache[3] != source[3])) != 0;
+
+					#if !defined(PLATFORM_VITA)
+						const bool changed = ((cache[0] != source[0]) | (cache[1] != source[1]) | (cache[2] != source[2]) | (cache[3] != source[3])) != 0;
+					#else
+						// Direct "array" access seems to cause memory alignment issues
+						const bool changed =
+							((memcmp(&cache[0], &source[0], sizeof(uint64)) != 0) |
+							(!memcmp(&cache[1], &source[1], sizeof(uint64)) != 0) |
+							(!memcmp(&cache[2], &source[2], sizeof(uint64)) != 0) |
+							(!memcmp(&cache[3], &source[3], sizeof(uint64))  != 0)) != 0;
+					#endif
 
 					if (changed)
 					{

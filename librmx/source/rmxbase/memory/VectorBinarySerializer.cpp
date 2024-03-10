@@ -8,6 +8,9 @@
 
 #include "rmxbase.h"
 
+#if defined(PLATFORM_VITA)
+	#include <psp2/kernel/clib.h>
+#endif
 
 namespace
 {
@@ -26,7 +29,12 @@ namespace
 		{
 			const size_t oldSize = buffer.size();
 			buffer.resize(oldSize + sizeof(T));
+		#if !defined(PLATFORM_VITA)
 			*(T*)&buffer[oldSize] = value;
+		#else
+			// Use memcpy to avoid issues with unaligned memory access
+			sceClibMemcpy(&buffer[oldSize], &value, sizeof(T));
+		#endif
 		}
 		return true;
 	}

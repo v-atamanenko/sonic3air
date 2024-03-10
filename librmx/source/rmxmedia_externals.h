@@ -81,6 +81,10 @@
 	#define RMX_USE_GLAD
 	#define GL_LUMINANCE GL_RED
 
+#elif defined(PLATFORM_VITA)
+	#include <vitaGL.h>
+	#define RMX_USE_GLES2
+
 #else
 	#error Unsupported platform
 #endif
@@ -90,9 +94,11 @@
 	#if !defined(PLATFORM_LINUX)
 		#define GL_RGB8				 GL_RGB
 		#define GL_RGBA8			 GL_RGBA
-		#define glGenVertexArrays	 glGenVertexArraysOES
-		#define glDeleteVertexArrays glDeleteVertexArraysOES
-		#define glBindVertexArray	 glBindVertexArrayOES
+		#if !defined(__vita__)
+			#define glGenVertexArrays	 glGenVertexArraysOES
+			#define glDeleteVertexArrays glDeleteVertexArraysOES
+			#define glBindVertexArray	 glBindVertexArrayOES
+		#endif
 	#endif
 	#define glClearDepth glClearDepthf
 	#define glDepthRange glDepthRangef

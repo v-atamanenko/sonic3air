@@ -154,8 +154,10 @@ bool FileHelper::loadBitmap(Bitmap& bitmap, const std::wstring& filename, bool s
 	bool FileHelper::loadShader(Shader& shader, const std::wstring& filename, const std::string& techname, const std::string& additionalDefines)
 	{
 		std::vector<uint8> content;
-		if (!FTX::FileSystem->readFile(filename, content))
+		if (!FTX::FileSystem->readFile(filename, content)) {
+			RMX_LOG_ERROR("Could not read shader file '" << WString(filename).toStdString() << "'");
 			return false;
+		}
 
 		if (shader.load(content, techname, additionalDefines))
 		{

@@ -110,7 +110,16 @@ void Shader::setTexture(const char* name, GLuint handle, GLenum target)
 	int number = mTextureCount;
 	glActiveTexture(GL_TEXTURE0 + number);
 	glBindTexture(target, handle);
+#if defined(PLATFORM_VITA)
+	// In cg shaders, "Texture" is a reserved name so we use "tex" instead
+	if (strcmp(name, "Texture") == 0) {
+		glUniform1i(getUniformLocation("tex"), number);
+	} else {
+		glUniform1i(getUniformLocation(name), number);
+	}
+#else
 	glUniform1i(getUniformLocation(name), number);
+#endif
 	++mTextureCount;
 }
 

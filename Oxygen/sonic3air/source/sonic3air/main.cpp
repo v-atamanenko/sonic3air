@@ -32,11 +32,19 @@ extern "C"
 }
 #endif
 
+#if defined(PLATFORM_VITA)
+extern "C"
+{
+	int _newlib_heap_size_user = 240 * 1024 * 1024;
+	unsigned int sceUserMainThreadStackSize = 4 * 1024 * 1024;
+}
+#endif
 
 int main(int argc, char** argv)
 {
 	EngineMain::earlySetup();
 
+#if !defined(PLATFORM_VITA)
 	// Read command line arguments
 	ArgumentsReader arguments;
 	arguments.read(argc, argv);
@@ -50,6 +58,12 @@ int main(int argc, char** argv)
 
 	// Make sure we're in the correct working directory
 	PlatformFunctions::changeWorkingDirectory(arguments.mExecutableCallPath);
+#else
+	argc = 0;
+
+	PlatformFunctions::changeWorkingDirectory("ux0:/data/sonic3air");
+	ArgumentsReader arguments;
+#endif
 
 #if defined(PLATFORM_WINDOWS)
 	// Check if the user has an old version of "audioremaster.bin", and remove it if that the case
@@ -58,7 +72,7 @@ int main(int argc, char** argv)
 		FTX::FileSystem->removeFile(L"data/audioremaster.bin");
 #endif
 
-#if !defined(PLATFORM_ANDROID)
+#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_VITA)
 	if (arguments.mPack)
 	{
 		PackageBuilder::performPacking();
