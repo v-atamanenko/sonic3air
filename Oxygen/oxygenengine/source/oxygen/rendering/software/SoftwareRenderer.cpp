@@ -64,6 +64,9 @@ namespace detail
 
 		FORCE_INLINE void addPixels8(int x, uint16 patternIndex)
 		{
+#ifdef PLATFORM_VITA
+			addPixels(x, patternIndex, 8);
+#else
 			// Same as above, but with hardcoded "pixels == 8"
 			const PatternManager::CacheItem::Pattern& pattern = mPatternCache[patternIndex & 0x07ff].mFlipVariation[(patternIndex >> 11) & 3];
 			uint64* dst = (uint64*)&mContent[mPosition + x];
@@ -86,6 +89,7 @@ namespace detail
 			{
 				mCurrentPixelBlock->mNumPixels += 8;
 			}
+#endif
 		}
 
 	public:
