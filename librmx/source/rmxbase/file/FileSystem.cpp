@@ -30,7 +30,7 @@ namespace rmx
 		#if !defined(PLATFORM_VITA)
 			addMountPoint(mDefaultRealFileProvider, L"", L"", 0);
 		#else
-			addMountPoint(mDefaultRealFileProvider, L"ux0:data/sonic3air/", L"", 0);
+			addMountPoint(mDefaultRealFileProvider, L"ux0:data/sonic3air/", L"ux0:data/sonic3air/", 0);
 		#endif
 	}
 
