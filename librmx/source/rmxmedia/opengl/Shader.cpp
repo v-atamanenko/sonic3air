@@ -572,7 +572,7 @@ void ShaderEffect::preprocessSource(String& source, Shader::ShaderType shaderTyp
 		}
 	}
 
-#ifdef RMX_USE_GLES2
+#if defined(RMX_USE_GLES2) && !defined(PLATFORM_VITA)
 	// GLSL ES 2.0 translation
 	String newSource;
 	for (int pos = 0; pos < source.length(); )

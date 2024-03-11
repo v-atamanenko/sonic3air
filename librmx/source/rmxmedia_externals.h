@@ -92,9 +92,9 @@
 
 #if defined(RMX_USE_GLES2) && !defined(__EMSCRIPTEN__)
 	#if !defined(PLATFORM_LINUX)
-		#define GL_RGB8				 GL_RGB
-		#define GL_RGBA8			 GL_RGBA
 		#if !defined(__vita__)
+			#define GL_RGB8				 GL_RGB
+			#define GL_RGBA8			 GL_RGBA
 			#define glGenVertexArrays	 glGenVertexArraysOES
 			#define glDeleteVertexArrays glDeleteVertexArraysOES
 			#define glBindVertexArray	 glBindVertexArrayOES
