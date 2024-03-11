@@ -1,23 +1,23 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-//#version 130
+#version 130
 
-//precision mediump float;
-//precision mediump int;
+precision mediump float;
+precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-uniform float4 Rect;
+attribute vec2 position;
+varying vec2 uv0;
 
-void main(
-	float2 position,
-	float2 out uv0 : TEXCOORD0,
-	float4 out gl_Position : POSITION
-) {
-	float2 pos = float2(Rect.x + position.x * Rect.z, Rect.y + position.y * Rect.w);
+uniform vec4 Rect;
+
+void main()
+{
+	vec2 pos = vec2(Rect.x + position.x * Rect.z, Rect.y + position.y * Rect.w);
 	uv0.xy = pos.xy;
 	gl_Position.x = pos.x * 2.0 - 1.0;
 	gl_Position.y = pos.y * 2.0 - 1.0;
@@ -29,14 +29,15 @@ void main(
 
 ## ----- Fragment -----------------------------------------------------------------
 
-uniform sampler2D tex;
+varying vec2 uv0;
 
-float4 main(
-	float2 uv0 : TEXCOORD0
-) {
-	float4 color = tex2D(tex, uv0);
+uniform sampler2D Texture;
+
+void main()
+{
+	vec4 color = texture2D(Texture, uv0);
 	color.a = 1.0;
-	return color;
+	gl_FragColor = color;
 }
 
 
