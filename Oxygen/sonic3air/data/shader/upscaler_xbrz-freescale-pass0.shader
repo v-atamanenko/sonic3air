@@ -1,7 +1,7 @@
 
 // Hyllian's xBRZ freescale multipass shader
 //   - Adapted for use in Oxygen Engine
-//  Copyright (C) 2018-2021 Eukaryot
+//  Copyright (C) 2018-2024 Eukaryot
 //
 // This shader is derived from original "xbrz-freescale-pass0.glsl" from https://github.com/libretro/glsl-shaders/tree/master/xbrz/shaders/xbrz-freescale-multipass
 // Used under GNU General Public License v2, see additional license info below.
@@ -66,20 +66,20 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-//#version 130
+#version 130
 
-//precision mediump float;
-//precision mediump int;
+precision mediump float;
+precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-void main(
-	float2 position,
-	float2 out TEX0 : TEXCOORD0,
-	float4 out gl_Position : POSITION
-) {
+attribute vec2 position;
+varying vec2 TEX0;
+
+void main()
+{
 	gl_Position.x = position.x * 2.0 - 1.0;
 	gl_Position.y = position.y * 2.0 - 1.0;
 	gl_Position.z = 0.0;
@@ -91,10 +91,12 @@ void main(
 
 ## ----- Fragment -----------------------------------------------------------------
 
-uniform float2 GameResolution;
-uniform sampler2D tex;
+varying vec2 TEX0;
 
-#define SourceSize float4(GameResolution, 1.0 / GameResolution)
+uniform vec2 GameResolution;
+uniform sampler2D Texture;
+
+#define SourceSize vec4(GameResolution, 1.0 / GameResolution)
 
 #define BLEND_NONE 0
 #define BLEND_NORMAL 1
@@ -104,19 +106,19 @@ uniform sampler2D tex;
 #define STEEP_DIRECTION_THRESHOLD 2.2
 #define DOMINANT_DIRECTION_THRESHOLD 3.6
 
-float DistYCbCr(float3 pixA, float3 pixB)
+float DistYCbCr(vec3 pixA, vec3 pixB)
 {
-	const float3 w = float3(0.2627, 0.6780, 0.0593);
+	const vec3 w = vec3(0.2627, 0.6780, 0.0593);
 	const float scaleB = 0.5 / (1.0 - w.b);
 	const float scaleR = 0.5 / (1.0 - w.r);
-	float3 diff = pixA - pixB;
+	vec3 diff = pixA - pixB;
 	float Y = dot(diff.rgb, w);
 	float Cb = scaleB * (diff.b - Y);
 	float Cr = scaleR * (diff.r - Y);
 	return sqrt(((LUMINANCE_WEIGHT * Y) * (LUMINANCE_WEIGHT * Y)) + (Cb * Cb) + (Cr * Cr));
 }
 
-bool IsPixEqual(const float3 pixA, const float3 pixB)
+bool IsPixEqual(const vec3 pixA, const vec3 pixB)
 {
 	return (DistYCbCr(pixA, pixB) < EQUAL_COLOR_TOLERANCE);
 }
@@ -124,11 +126,10 @@ bool IsPixEqual(const float3 pixA, const float3 pixB)
 #define eq(a,b)  (a == b)
 #define neq(a,b) (a != b)
 
-#define P(x,y) tex2D(tex, coord + SourceSize.zw * float2(x, y)).rgb
+#define P(x,y) texture2D(Texture, coord + SourceSize.zw * vec2(x, y)).rgb
 
-float4 main(
-	float2 TEX0 : TEXCOORD0
-) {
+void main()
+{
 	//---------------------------------------
 	// Input Pixel Mapping:  -|x|x|x|-
 	//                       x|A|B|C|x
@@ -136,22 +137,22 @@ float4 main(
 	//                       x|G|H|I|x
 	//                       -|x|x|x|-
 
-	float2 pos = frac(TEX0.xy * SourceSize.xy) - float2(0.5, 0.5);
-	float2 coord = TEX0.xy - pos * SourceSize.zw;
+	vec2 pos = fract(TEX0.xy * SourceSize.xy) - vec2(0.5, 0.5);
+	vec2 coord = TEX0.xy - pos * SourceSize.zw;
 
-	float3 A = P(-1.,-1.);
-	float3 B = P( 0.,-1.);
-	float3 C = P( 1.,-1.);
-	float3 D = P(-1., 0.);
-	float3 E = P( 0., 0.);
-	float3 F = P( 1., 0.);
-	float3 G = P(-1., 1.);
-	float3 H = P( 0., 1.);
-	float3 I = P( 1., 1.);
+	vec3 A = P(-1.,-1.);
+	vec3 B = P( 0.,-1.);
+	vec3 C = P( 1.,-1.);
+	vec3 D = P(-1., 0.);
+	vec3 E = P( 0., 0.);
+	vec3 F = P( 1., 0.);
+	vec3 G = P(-1., 1.);
+	vec3 H = P( 0., 1.);
+	vec3 I = P( 1., 1.);
 
 	// blendResult Mapping: x|y|
 	//                      w|z|
-	int4 blendResult = int4(BLEND_NONE,BLEND_NONE,BLEND_NONE,BLEND_NONE);
+	ivec4 blendResult = ivec4(BLEND_NONE,BLEND_NONE,BLEND_NONE,BLEND_NONE);
 
 	// Preprocess corners
 	// Pixel Tap Mapping: -|-|-|-|-
@@ -207,7 +208,7 @@ float4 main(
 		blendResult.x = ((dist_D_B < dist_A_E) && neq(E,D) && neq(E,B)) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 
-	float4 FragColor = float4(blendResult);
+	gl_FragColor = vec4(blendResult);
 
 	// Pixel Tap Mapping: -|-|-|-|-
 	//                    -|-|B|C|-
@@ -218,16 +219,16 @@ float4 main(
 		!((blendResult.y != BLEND_NONE && !IsPixEqual(E, G)) || (blendResult.w != BLEND_NONE && !IsPixEqual(E, C)) ||
 		 (IsPixEqual(G, H) && IsPixEqual(H, I) && IsPixEqual(I, F) && IsPixEqual(F, C) && !IsPixEqual(E, I)))))
 	{
-		FragColor.z += 4.0;
+		gl_FragColor.z += 4.0;
 
 		float dist_F_G = DistYCbCr(F, G);
 		float dist_H_C = DistYCbCr(H, C);
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_F_G <= dist_H_C) && neq(E,G) && neq(D,G))
-			FragColor.z += 16.0;
+			gl_FragColor.z += 16.0;
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_H_C <= dist_F_G) && neq(E,C) && neq(B,C))
-			FragColor.z += 64.0;
+			gl_FragColor.z += 64.0;
 	}
 
 	// Pixel Tap Mapping: -|-|-|-|-
@@ -239,16 +240,16 @@ float4 main(
 		  !((blendResult.z != BLEND_NONE && !IsPixEqual(E, A)) || (blendResult.x != BLEND_NONE && !IsPixEqual(E, I)) ||
 		   (IsPixEqual(A, D) && IsPixEqual(D, G) && IsPixEqual(G, H) && IsPixEqual(H, I) && !IsPixEqual(E, G)))))
 	{
-		FragColor.w += 4.0;
+		gl_FragColor.w += 4.0;
 
 		float dist_H_A = DistYCbCr(H, A);
 		float dist_D_I = DistYCbCr(D, I);
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_H_A <= dist_D_I) && neq(E,A) && neq(B,A))
-			FragColor.w += 16.0;
+			gl_FragColor.w += 16.0;
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_D_I <= dist_H_A) && neq(E,I) && neq(F,I))
-			FragColor.w += 64.0;
+			gl_FragColor.w += 64.0;
 	}
 
 	// Pixel Tap Mapping: -|-|x|x|-
@@ -260,16 +261,16 @@ float4 main(
 		!((blendResult.x != BLEND_NONE && !IsPixEqual(E, I)) || (blendResult.z != BLEND_NONE && !IsPixEqual(E, A)) ||
 		  (IsPixEqual(I, F) && IsPixEqual(F, C) && IsPixEqual(C, B) && IsPixEqual(B, A) && !IsPixEqual(E, C)))))
 	{
-		FragColor.y += 4.0;
+		gl_FragColor.y += 4.0;
 
 		float dist_B_I = DistYCbCr(B, I);
 		float dist_F_A = DistYCbCr(F, A);
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_B_I <= dist_F_A) && neq(E,I) && neq(H,I))
-			FragColor.y += 16.0;
+			gl_FragColor.y += 16.0;
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_F_A <= dist_B_I) && neq(E,A) && neq(D,A))
-			FragColor.y += 64.0;
+			gl_FragColor.y += 64.0;
 	}
 
 	// Pixel Tap Mapping: -|x|x|-|-
@@ -281,19 +282,19 @@ float4 main(
 		!((blendResult.w != BLEND_NONE && !IsPixEqual(E, C)) || (blendResult.y != BLEND_NONE && !IsPixEqual(E, G)) ||
 		 (IsPixEqual(C, B) && IsPixEqual(B, A) && IsPixEqual(A, D) && IsPixEqual(D, G) && !IsPixEqual(E, A)))))
 	{
-		FragColor.x += 4.0;
+		gl_FragColor.x += 4.0;
 
 		float dist_D_C = DistYCbCr(D, C);
 		float dist_B_G = DistYCbCr(B, G);
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_D_C <= dist_B_G) && neq(E,C) && neq(F,C))
-			FragColor.x += 16.0;
+			gl_FragColor.x += 16.0;
 
 		if ((STEEP_DIRECTION_THRESHOLD * dist_B_G <= dist_D_C) && neq(E,G) && neq(H,G))
-			FragColor.x += 64.0;
+			gl_FragColor.x += 64.0;
 	}
 
-	return FragColor / 255.0f;
+	gl_FragColor /= 255.0;
 }
 
 

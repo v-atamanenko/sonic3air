@@ -1,49 +1,51 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-//#version 130
+#version 130
 
-//precision mediump float;
-//precision mediump int;
+precision mediump float;
+precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-uniform float4 Transform;
+attribute vec2 position;
+varying vec2 uv0;
 
-void main(
-	float2 position,
-	float2 out uv0 : TEXCOORD0,
-	float4 out gl_Position : POSITION
-) {
+uniform vec4 Transform;
+
+void main()
+{
 	uv0.xy = position.xy;
-	float2 pos = float2(Transform.x + position.x * Transform.z, Transform.y + position.y * Transform.w);
-	gl_Position = float4(pos, 0.0, 1.0);
+	vec2 pos = vec2(Transform.x + position.x * Transform.z, Transform.y + position.y * Transform.w);
+	gl_Position = vec4(pos, 0.0, 1.0);
 }
 
 
 
 ## ----- Fragment -----------------------------------------------------------------
 
-uniform sampler2D tex;
+varying vec2 uv0;
+
+uniform sampler2D Texture;
 #ifdef USE_TINT_COLOR
-	uniform float4 TintColor;
+	uniform vec4 TintColor;
+	uniform vec4 AddedColor;
 #endif
 
-float4 main(
-	float2 uv0 : TEXCOORD0
-) {
-	float4 color = tex2D(tex, uv0);
+void main()
+{
+	vec4 color = texture2D(Texture, uv0);
 #ifdef USE_TINT_COLOR
-	color *= TintColor;
+	color = color * TintColor + AddedColor;
 #endif
 #ifdef ALPHA_TEST
 	if (color.a < 0.01)
 		discard;
 #endif
 
-	return color;
+	gl_FragColor = color;
 }
 
 

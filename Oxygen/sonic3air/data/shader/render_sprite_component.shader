@@ -1,35 +1,35 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-//#version 130
+#version 130
 
-//precision mediump float;
-//precision mediump int;
+precision mediump float;
+precision mediump int;
 
-uniform int2 Size;
+uniform ivec2 Size;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-uniform int3 Position;		// With z = priority flag (0 or 1)
-uniform int2 PivotOffset;
-uniform float4 Transformation;
-uniform int2 GameResolution;
+attribute vec2 position;
+varying vec2 uv0;
 
-void main(
-	float2 position,
-	float2 out uv0 : TEXCOORD0,
-	float4 out gl_Position : POSITION
-) {
+uniform ivec3 Position;		// With z = priority flag (0 or 1)
+uniform ivec2 PivotOffset;
+uniform vec4 Transformation;
+uniform ivec2 GameResolution;
+
+void main()
+{
 	// Calculate local offset
-	float2 LocalOffset;
+	vec2 LocalOffset;
 	LocalOffset.x = position.x * float(Size.x);
 	LocalOffset.y = position.y * float(Size.y);
 
 	// Transform
-	float2 v = LocalOffset.xy + float2(PivotOffset.xy);
-	float2 transformedVertex;
+	vec2 v = LocalOffset.xy + vec2(PivotOffset.xy);
+	vec2 transformedVertex;
 	transformedVertex.x = v.x * Transformation.x + v.y * Transformation.y;
 	transformedVertex.y = v.x * Transformation.z + v.y * Transformation.w;
 
@@ -50,21 +50,22 @@ void main(
 
 ## ----- Fragment -----------------------------------------------------------------
 
-uniform sampler2D SpriteTexture;
-uniform float4 TintColor;
-uniform float4 AddedColor;
+varying vec2 uv0;
 
-float4 main(
-	float2 uv0 : TEXCOORD0
-) {
-	float4 color = tex2D(SpriteTexture, uv0.xy);
+uniform sampler2D SpriteTexture;
+uniform vec4 TintColor;
+uniform vec4 AddedColor;
+
+void main()
+{
+	vec4 color = texture2D(SpriteTexture, uv0.xy);
 	color = color * TintColor + AddedColor;
 #ifdef ALPHA_TEST
 	if (color.a < 0.01)
 		discard;
 #endif
 
-	return color;
+	gl_FragColor = color;
 }
 
 
@@ -73,7 +74,6 @@ float4 main(
 
 technique Standard
 {
-	blendfunc = opaque;
 	vs = Shared + Vertex;
 	fs = Shared + Fragment;
 	vertexattrib[0] = position;
@@ -81,6 +81,5 @@ technique Standard
 
 technique Standard_AlphaTest : Standard
 {
-	blendfunc = alpha;
 	define = ALPHA_TEST;
 }

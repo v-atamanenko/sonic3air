@@ -1,35 +1,36 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-//#version 140		// Needed for isamplerBuffer
+// Needed for isamplerBuffer
+#version 140
 
-//precision mediump float;
-//precision mediump int;
+precision mediump float;
+precision mediump int;
 
-uniform int2 Size;
+uniform ivec2 Size;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-uniform int3 Position;		// With z = priority flag (0 or 1)
-uniform int2 PivotOffset;
-uniform float4 Transformation;
-uniform int2 GameResolution;
+attribute vec2 position;
+varying vec3 LocalOffset;
+
+uniform ivec3 Position;		// With z = priority flag (0 or 1)
+uniform ivec2 PivotOffset;
+uniform vec4 Transformation;
+uniform ivec2 GameResolution;
 uniform int WaterLevel;
 
-void main(
-	float2 position,
-	float3 out LocalOffset : TEXCOORD0,
-	float4 out gl_Position : POSITION
-) {
+void main()
+{
 	// Calculate local offset
 	LocalOffset.x = position.x * float(Size.x);
 	LocalOffset.y = position.y * float(Size.y);
 
 	// Transform
-	float2 v = LocalOffset.xy + float2(PivotOffset.xy);
-	float2 transformedVertex;
+	vec2 v = LocalOffset.xy + vec2(PivotOffset.xy);
+	vec2 transformedVertex;
 	transformedVertex.x = v.x * Transformation.x + v.y * Transformation.y;
 	transformedVertex.y = v.x * Transformation.z + v.y * Transformation.w;
 
@@ -44,34 +45,58 @@ void main(
 	gl_Position.w = 1.0;
 
 	// Calculate water offset
-	LocalOffset.z = (transformedVertex.y - float(WaterLevel)) / float(GameResolution.y);
+	LocalOffset.z = transformedVertex.y - float(WaterLevel);
 }
 
 
 
-## ----- Fragment -----------------------------------------------------------------;
+## ----- Fragment -----------------------------------------------------------------
 
-uniform sampler2D SpriteTexture;
+varying vec3 LocalOffset;
+
+#ifdef USE_BUFFER_TEXTURES
+	uniform isamplerBuffer SpriteTexture;
+#else
+	uniform sampler2D SpriteTexture;
+#endif
 uniform sampler2D PaletteTexture;
 uniform int Atex;
-uniform float4 TintColor;
-uniform float4 AddedColor;
+uniform vec4 TintColor;
+uniform vec4 AddedColor;
 
-float4 main(
-	float3 LocalOffset : TEXCOORD0
-) {
+
+vec4 getPaletteColor(int paletteIndex, float paletteOffsetY)
+{
+#ifdef GL_ES
+	int paletteY = paletteIndex / 256;
+	int paletteX = paletteIndex - paletteY * 256;
+#else
+	int paletteX = paletteIndex & 0xff;
+	int paletteY = paletteIndex >> 8;
+#endif
+	vec2 samplePosition = vec2((float(paletteX) + 0.5) / 256.0, (float(paletteY) + 0.5) / 4.0 + paletteOffsetY);
+	return texture2D(PaletteTexture, samplePosition);
+}
+
+
+void main()
+{
 	int ix = int(LocalOffset.x);
 	int iy = int(LocalOffset.y);
-	int paletteIndex = Atex + int(tex2D(SpriteTexture, float2(((float(ix) + 0.5) / float(Size.x)), (float(iy) + 0.5) / float(Size.y))).x * 256.0);
+#ifdef USE_BUFFER_TEXTURES
+	int paletteIndex = Atex + texelFetch(SpriteTexture, ix + iy * Size.x).x;
+#else
+	int paletteIndex = Atex + int(texture2D(SpriteTexture, vec2(((float(ix) + 0.5) / float(Size.x)), (float(iy) + 0.5) / float(Size.y))).x * 256.0);
+#endif
 
-	float4 color = tex2D(PaletteTexture, float2((float(paletteIndex) + 0.5) / 512.0, LocalOffset.z + 0.5));
-	color = float4(AddedColor.rgb, 0.0) + color * TintColor;
+	vec4 color = getPaletteColor(paletteIndex, clamp(LocalOffset.z, 0.0, 0.5));
+	color = vec4(AddedColor.rgb, 0.0) + color * TintColor;
 #ifdef ALPHA_TEST
 	if (color.a < 0.01)
 		discard;
 #endif
 
-	return color;
+	gl_FragColor = color;
 }
 
 
@@ -80,7 +105,6 @@ float4 main(
 
 technique Standard
 {
-	blendfunc = opaque;
 	vs = Shared + Vertex;
 	fs = Shared + Fragment;
 	vertexattrib[0] = position;
@@ -88,6 +112,5 @@ technique Standard
 
 technique Standard_AlphaTest : Standard
 {
-	blendfunc = alpha;
 	define = ALPHA_TEST;
 }

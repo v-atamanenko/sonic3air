@@ -1,20 +1,20 @@
 
 ## ----- Shared -------------------------------------------------------------------
 
-//#version 130
+#version 130
 
-//precision mediump float;
-//precision mediump int;
+precision mediump float;
+precision mediump int;
 
 
 
 ## ----- Vertex -------------------------------------------------------------------
 
-void main(
-	float2 position,
-	float2 out uv0 : TEXCOORD0,
-	float4 out gl_Position : POSITION
-) {
+attribute vec2 position;
+varying vec2 uv0;
+
+void main()
+{
 	uv0.xy = position.xy;
 	gl_Position.x = position.x * 2.0 - 1.0;
 	gl_Position.y = position.y * 2.0 - 1.0;
@@ -26,27 +26,28 @@ void main(
 
 ## ----- Fragment -----------------------------------------------------------------
 
-uniform sampler2D tex;
-uniform float2 TexelOffset;
-uniform float4 Kernel;
+varying vec2 uv0;
 
-float4 main(
-	float2 uv0 : TEXCOORD0
-) {
-	float3 color00 = tex2D(tex, uv0 + float2(-TexelOffset.x, -TexelOffset.y)).rgb;
-	float3 color01 = tex2D(tex, uv0 + float2(0.0, -TexelOffset.y)).rgb;
-	float3 color02 = tex2D(tex, uv0 + float2(TexelOffset.x, -TexelOffset.y)).rgb;
-	float3 color10 = tex2D(tex, uv0 + float2(-TexelOffset.x, 0.0)).rgb;
-	float3 color11 = tex2D(tex, uv0).rgb;
-	float3 color12 = tex2D(tex, uv0 + float2(TexelOffset.x, 0.0)).rgb;
-	float3 color20 = tex2D(tex, uv0 + float2(-TexelOffset.x, TexelOffset.y)).rgb;
-	float3 color21 = tex2D(tex, uv0 + float2(0.0, TexelOffset.y)).rgb;
-	float3 color22 = tex2D(tex, uv0 + float2(TexelOffset.x, TexelOffset.y)).rgb;
+uniform sampler2D Texture;
+uniform vec2 TexelOffset;
+uniform vec4 Kernel;
 
-	float3 color = color00 * Kernel.w + color01 * Kernel.z + color02 * Kernel.w
+void main()
+{
+	vec3 color00 = texture2D(Texture, uv0 + vec2(-TexelOffset.x, -TexelOffset.y)).rgb;
+	vec3 color01 = texture2D(Texture, uv0 + vec2(0.0, -TexelOffset.y)).rgb;
+	vec3 color02 = texture2D(Texture, uv0 + vec2(TexelOffset.x, -TexelOffset.y)).rgb;
+	vec3 color10 = texture2D(Texture, uv0 + vec2(-TexelOffset.x, 0.0)).rgb;
+	vec3 color11 = texture2D(Texture, uv0).rgb;
+	vec3 color12 = texture2D(Texture, uv0 + vec2(TexelOffset.x, 0.0)).rgb;
+	vec3 color20 = texture2D(Texture, uv0 + vec2(-TexelOffset.x, TexelOffset.y)).rgb;
+	vec3 color21 = texture2D(Texture, uv0 + vec2(0.0, TexelOffset.y)).rgb;
+	vec3 color22 = texture2D(Texture, uv0 + vec2(TexelOffset.x, TexelOffset.y)).rgb;
+
+	vec3 color = color00 * Kernel.w + color01 * Kernel.z + color02 * Kernel.w
 			   + color10 * Kernel.y + color11 * Kernel.x + color12 * Kernel.y
 			   + color20 * Kernel.w + color21 * Kernel.z + color22 * Kernel.w;
-	return float4(color, 1.0);
+	gl_FragColor = vec4(color, 1.0);
 }
 
 
