@@ -33,6 +33,8 @@ extern "C"
 #endif
 
 #if defined(PLATFORM_VITA)
+#include <vitasdk.h>
+
 extern "C"
 {
 	int _newlib_heap_size_user = 240 * 1024 * 1024;
@@ -59,6 +61,11 @@ int main(int argc, char** argv)
 	// Make sure we're in the correct working directory
 	PlatformFunctions::changeWorkingDirectory(arguments.mExecutableCallPath);
 #else
+	scePowerSetArmClockFrequency(444);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(166);
+
 	argc = 0;
 
 	PlatformFunctions::changeWorkingDirectory(L"ux0:/data/sonic3air");
