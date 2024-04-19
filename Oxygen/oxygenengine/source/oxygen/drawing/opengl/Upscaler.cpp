@@ -20,11 +20,13 @@ void Upscaler::startup()
 {
 	FileHelper::loadShader(mUpscalerSoftShader,             L"data/shader/upscaler_soft.shader", "Standard");
 	FileHelper::loadShader(mUpscalerSoftShaderScanlines,    L"data/shader/upscaler_soft.shader", "Scanlines");
+	#if !defined(PLATFORM_VITA)
 	FileHelper::loadShader(mUpscalerXBRZMultipassShader[0], L"data/shader/upscaler_xbrz-freescale-pass0.shader", "Standard");
 	FileHelper::loadShader(mUpscalerXBRZMultipassShader[1], L"data/shader/upscaler_xbrz-freescale-pass1.shader", "Standard");
 	FileHelper::loadShader(mUpscalerHQ2xShader,             L"data/shader/upscaler_hqx.shader", "Standard_2x");
 	FileHelper::loadShader(mUpscalerHQ3xShader,             L"data/shader/upscaler_hqx.shader", "Standard_3x");
 	FileHelper::loadShader(mUpscalerHQ4xShader,             L"data/shader/upscaler_hqx.shader", "Standard_4x");
+	#endif
 
 	mPass0Texture.setup(Configuration::instance().mGameScreen, rmx::OpenGLHelper::FORMAT_RGBA);
 
@@ -69,12 +71,12 @@ void Upscaler::renderImage(const Rectf& rect, GLuint textureHandle, Vec2i textur
 				filterLinear = true;
 				upscaleShader = &mUpscalerSoftShader;
 				break;
-
+				
+			#if !defined(PLATFORM_VITA)
 			case 3:
 				pass0Shader = &mUpscalerXBRZMultipassShader[0];
 				upscaleShader = &mUpscalerXBRZMultipassShader[1];
 				break;
-
 			case 4:
 				upscaleShader = &mUpscalerHQ2xShader;
 				lookupTextureIndex = 0;
@@ -87,6 +89,12 @@ void Upscaler::renderImage(const Rectf& rect, GLuint textureHandle, Vec2i textur
 				upscaleShader = &mUpscalerHQ4xShader;
 				lookupTextureIndex = 2;
 				break;
+			#else
+			case 3: break;
+			case 4: break;
+			case 5: break;
+			case 6: break;
+			#endif
 		}
 	}
 

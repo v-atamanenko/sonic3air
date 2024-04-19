@@ -75,14 +75,17 @@ void OptionsConfig::buildSystem()
 
 	CATEGORY("Update")
 	{
+		#if !defined(PLATFORM_VITA)
 		configBuilder.addSetting("Check for updates", option::_CHECK_FOR_UPDATE)
 			.addOption("Stable updates", 0)
 			.addOption("Stable & preview", 1)
 			.addOption("All incl. test builds", 2);
+		#endif
 	}
 
 	CATEGORY("Ghost Sync")
 	{
+		#if !defined(PLATFORM_VITA)
 		configBuilder.addSetting("Enable Ghost Sync", option::GHOST_SYNC)
 			.addOption("Disabled", 0)
 			.addOption("Enabled", 1);
@@ -91,6 +94,7 @@ void OptionsConfig::buildSystem()
 			.addOption("Full opacity", 1)
 			.addOption("Semi-transparent", 2)
 			.addOption("Ghost Style", 3);
+		#endif
 	}
 
 	CATEGORY("More Info")
@@ -123,11 +127,16 @@ void OptionsConfig::buildDisplay()
 		configBuilder.addSetting("Renderer:", option::RENDERER);
 		const Configuration::RenderMethod highest = Configuration::getHighestSupportedRenderMethod();
 
+		#if !defined(PLATFORM_VITA)
 		configBuilder.addOption("Fail-Safe / Software", (uint32)Configuration::RenderMethod::SOFTWARE);
 		if (highest >= Configuration::RenderMethod::OPENGL_SOFT)
 			configBuilder.addOption("OpenGL Software", (uint32)Configuration::RenderMethod::OPENGL_SOFT);
 		if (highest >= Configuration::RenderMethod::OPENGL_FULL)
 			configBuilder.addOption("OpenGL Hardware", (uint32)Configuration::RenderMethod::OPENGL_FULL);
+		#else
+		// OpenGL Hardware does not work correctly on PSVita
+		configBuilder.addOption("OpenGL Software", (uint32)Configuration::RenderMethod::OPENGL_SOFT);
+		#endif
 
 		configBuilder.addSetting("Frame Sync:", option::FRAME_SYNC)
 			.addOption("V-Sync Off", 0)
@@ -146,7 +155,8 @@ void OptionsConfig::buildDisplay()
 			.addOption("Classic Box 1", 1)
 			.addOption("Classic Box 2", 2)
 			.addOption("Classic Box 3", 3);
-
+			
+		#if !defined(PLATFORM_VITA)
 		configBuilder.addSetting("Screen Filter:", option::FILTERING)
 			.addOption("Sharp", 0)
 			.addOption("Soft 1", 1)
@@ -155,6 +165,13 @@ void OptionsConfig::buildDisplay()
 			.addOption("HQ2x", 4)
 			.addOption("HQ3x", 5)
 			.addOption("HQ4x", 6);
+		#else
+		// High quality filters on the PSVITA is playing in slowmotion...
+		configBuilder.addSetting("Screen Filter:", option::FILTERING)
+			.addOption("Sharp", 0)
+			.addOption("Soft 1", 1)
+			.addOption("Soft 2", 2);
+		#endif
 
 		configBuilder.addSetting("Scanlines:", option::SCANLINES)
 			.addOption("Off", 0)
@@ -173,6 +190,7 @@ void OptionsConfig::buildDisplay()
 
 	CATEGORY("Window Mode")
 	{
+		#if !defined(PLATFORM_VITA)
 		configBuilder.addSetting("Current Screen:", option::WINDOW_MODE)
 			.addOption("Windowed", 0)
 			.addOption("Fullscreen", 1)
@@ -182,6 +200,14 @@ void OptionsConfig::buildDisplay()
 			.addOption("Windowed", 0)
 			.addOption("Fullscreen", 1)
 			.addOption("Exclusive Fullscreen", 2);
+		#else
+		// These aren't supposed to show up on the Vita
+		configBuilder.addSetting("Current Screen:", option::WINDOW_MODE)
+			.addOption("Exclusive Fullscreen", 0);
+
+		configBuilder.addSetting("Startup Screen:", option::WINDOW_MODE_STARTUP)
+			.addOption("Exclusive Fullscreen", 0);
+		#endif
 	}
 
 	CATEGORY("Performance Output")
@@ -191,6 +217,7 @@ void OptionsConfig::buildDisplay()
 			.addOption("Show Framerate", 1)
 			.addOption("Full Profiling", 2);
 	}
+	
 }
 
 void OptionsConfig::buildAudio()
