@@ -20,6 +20,8 @@ set _CL_=/MT
 set _CL_=
 popd
 
+popd
+
 call copy_curl.bat no_pause
 
 popd
