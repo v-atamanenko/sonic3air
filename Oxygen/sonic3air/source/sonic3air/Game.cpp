@@ -35,6 +35,73 @@
 #include <lemon/program/FunctionWrapper.h>
 #include <lemon/program/Module.h>
 
+#ifdef PLATFORM_VITA
+#include "platform/vita/trophies.h"
+
+enum {
+	TROPHY_300_RINGS = 1,
+	TROPHY_DOUBLE_INVINCIBILITY,
+	TROPHY_CONTINUES,
+	TROPHY_GOING_HYPER,
+	TROPHY_SCORE,
+	TROPHY_ELECTROCUTE,
+	TROPHY_LONGPLAY,
+	TROPHY_AIZ_TIMEATTACK,
+	TROPHY_MHZ_GIANTRINGS,
+	TROPHY_ICZ_SNOWBOARDING,
+	TROPHY_ICZ_KNUX_SUNRISE,
+	TROPHY_LBZ_STAY_DRY,
+	TROPHY_MHZ_OPEN_MONITORS,
+	TROPHY_FBZ_FREE_ANIMALS,
+	TROPHY_SSZ_DECOYS,
+	TROPHY_GS_EXIT_TOP,
+	TROPHY_SM_JACKPOT,
+	TROPHY_BS_PERFECT
+};
+
+uint32_t get_trophy_id(uint32_t ach_id) {
+	switch (ach_id) {
+	case SharedDatabase::Achievement::ACHIEVEMENT_300_RINGS:
+		return TROPHY_300_RINGS;
+	case SharedDatabase::Achievement::ACHIEVEMENT_DOUBLE_INVINCIBILITY:
+		return TROPHY_DOUBLE_INVINCIBILITY;
+	case SharedDatabase::Achievement::ACHIEVEMENT_CONTINUES:
+		return TROPHY_CONTINUES;
+	case SharedDatabase::Achievement::ACHIEVEMENT_GOING_HYPER:
+		return TROPHY_GOING_HYPER;
+	case SharedDatabase::Achievement::ACHIEVEMENT_SCORE:
+		return TROPHY_SCORE;
+	case SharedDatabase::Achievement::ACHIEVEMENT_ELECTROCUTE:
+		return TROPHY_ELECTROCUTE;
+	case SharedDatabase::Achievement::ACHIEVEMENT_LONGPLAY:
+		return TROPHY_LONGPLAY;
+	case SharedDatabase::Achievement::ACHIEVEMENT_AIZ_TIMEATTACK:
+		return TROPHY_AIZ_TIMEATTACK;
+	case SharedDatabase::Achievement::ACHIEVEMENT_MGZ_GIANTRINGS:
+		return TROPHY_MHZ_GIANTRINGS;
+	case SharedDatabase::Achievement::ACHIEVEMENT_ICZ_SNOWBOARDING:
+		return TROPHY_ICZ_SNOWBOARDING;
+	case SharedDatabase::Achievement::ACHIEVEMENT_ICZ_KNUX_SUNRISE:
+		return TROPHY_ICZ_KNUX_SUNRISE;
+	case SharedDatabase::Achievement::ACHIEVEMENT_LBZ_STAY_DRY:
+		return TROPHY_LBZ_STAY_DRY;
+	case SharedDatabase::Achievement::ACHIEVEMENT_MHZ_OPEN_MONITORS:
+		return TROPHY_MHZ_OPEN_MONITORS;
+	case SharedDatabase::Achievement::ACHIEVEMENT_FBZ_FREE_ANIMALS:
+		return TROPHY_FBZ_FREE_ANIMALS;
+	case SharedDatabase::Achievement::ACHIEVEMENT_SSZ_DECOYS:
+		return TROPHY_SSZ_DECOYS;
+	case SharedDatabase::Achievement::ACHIEVEMENT_GS_EXIT_TOP:
+		return TROPHY_GS_EXIT_TOP;
+	case SharedDatabase::Achievement::ACHIEVEMENT_SM_JACKPOT:
+		return TROPHY_SM_JACKPOT;
+	case SharedDatabase::Achievement::ACHIEVEMENT_BS_PERFECT:
+		return TROPHY_BS_PERFECT;
+	default:
+		return 0;
+	}
+}
+#endif
 
 namespace
 {
@@ -922,6 +989,9 @@ void Game::setAchievementComplete(uint32 achievementId)
 		SharedDatabase::Achievement* achievement = SharedDatabase::getAchievement(achievementId);
 		if (nullptr != achievement)
 		{
+#ifdef PLATFORM_VITA
+			trophies_unlock(get_trophy_id(achievementId));
+#endif
 			GameApp::instance().showUnlockedWindow(SecretUnlockedWindow::EntryType::ACHIEVEMENT, "Achievement complete", achievement->mName);
 		}
 		else

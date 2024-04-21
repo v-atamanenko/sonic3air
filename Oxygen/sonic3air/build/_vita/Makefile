@@ -325,6 +325,7 @@ SOURCES	+=	\
 			Oxygen/sonic3air/source/sonic3air/menu/overlays/SkippableCutsceneWindow \
 			Oxygen/sonic3air/source/sonic3air/resources/DynamicSprites \
 			Oxygen/sonic3air/source/sonic3air/scriptimpl/ScriptImplementations \
+			Oxygen/sonic3air/source/sonic3air/platform/vita/trophies \
 			librmx/source/rmxbase/_jsoncpp/json_reader \
 			librmx/source/rmxbase/_jsoncpp/json_value \
 			librmx/source/rmxbase/_jsoncpp/json_writer \
