@@ -82,6 +82,9 @@ mac_dist
 # Android
 /Oxygen/sonic3air/build/_android/local.properties
 
+# Vita
+/Oxygen/sonic3air/build/_vita/build
+
 # Discord Game SDL binaries
 !/Oxygen/sonic3air/source/external/discord_game_sdk/lib/*/*.dll
 !/Oxygen/sonic3air/source/external/discord_game_sdk/lib/*/*.lib

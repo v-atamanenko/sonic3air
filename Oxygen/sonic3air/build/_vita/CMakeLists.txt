@@ -248,6 +248,7 @@ add_executable(${CMAKE_PROJECT_NAME}
   ${CMAKE_SOURCE_DIR}/../../../../Oxygen/sonic3air/source/sonic3air/menu/overlays/SkippableCutsceneWindow.cpp
   ${CMAKE_SOURCE_DIR}/../../../../Oxygen/sonic3air/source/sonic3air/resources/DynamicSprites.cpp
   ${CMAKE_SOURCE_DIR}/../../../../Oxygen/sonic3air/source/sonic3air/scriptimpl/ScriptImplementations.cpp
+  ${CMAKE_SOURCE_DIR}/../../../../Oxygen/sonic3air/source/sonic3air/platform/vita/trophies.c
   ${CMAKE_SOURCE_DIR}/../../../../librmx/source/rmxbase/_jsoncpp/json_reader.cpp
   ${CMAKE_SOURCE_DIR}/../../../../librmx/source/rmxbase/_jsoncpp/json_value.cpp
   ${CMAKE_SOURCE_DIR}/../../../../librmx/source/rmxbase/_jsoncpp/json_writer.cpp
@@ -316,7 +317,7 @@ target_include_directories(${CMAKE_PROJECT_NAME}
                            )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
-                      vorbis ogg minizip bz2 zstd
+                      vorbis ogg minizip bz2 zstd SceNpTrophy_stub
                       SDL2::SDL2 vitaGL vitashark mathneon SceDisplay_stub SceGxm_stub
                       SceNet_stub SceNetCtl_stub SceAppUtil_stub SceSysmodule_stub
                       SceCtrl_stub SceHid_stub SceTouch_stub SceAudio_stub SceShaccCgExt
@@ -335,6 +336,7 @@ vita_create_vpk(${VITA_VPKNAME}.vpk ${VITA_TITLEID} eboot.bin
                 ${CMAKE_SOURCE_DIR}/../../___internal/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
                 ${CMAKE_SOURCE_DIR}/../../___internal/sce_sys/livearea/contents/bg0.png sce_sys/livearea/contents/bg0.png
                 ${CMAKE_SOURCE_DIR}/../../___internal/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
+                ${CMAKE_SOURCE_DIR}/../../___internal/sce_sys/trophy/SAIR30000_00/TROPHY.TRP sce_sys/trophy/SAIR30000_00/TROPHY.TRP
                 )
 
 add_custom_target(send
