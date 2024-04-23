@@ -13,8 +13,9 @@ cmake --build build -- -j$(nproc) && cmake --install build
 ```
 git clone https://github.com/Eukaryot/sonic3air
 cd sonic3air/Oxygen/sonic3air/build/_vita/
-make PLATFORM=Vita DEBUG=1 -j$(nproc)
+cmake -S. -Bbuild
+cmake --build build -- -j$(nproc)
 ```
-4. Find the built `sonic3air.vpk` and `eboot.bin` in the `Oxygen/sonic3air/build/_vita/bin/Vita/` directory.
+4. Find the built `sonic3air.vpk` and `eboot.bin` in the `Oxygen/sonic3air/build/_vita/build/` directory.
 
 5. The Vita version uses different shaders, so you will need to copy the `shader` folder from `Oxygen/sonic3air/build/_vita` into `ux0:data/sonic3air/data`.
